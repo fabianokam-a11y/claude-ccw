@@ -23,4 +23,4 @@ services:
         value: "true"
       - key: MCP_ACCESS_TOKEN
         sync: false
-    healthCheckPath: /mcp
+    healthCheckPath: /healthz
