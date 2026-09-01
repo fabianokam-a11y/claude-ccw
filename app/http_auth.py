@@ -17,12 +17,20 @@ from app.logging_setup import log_event
 
 
 class BearerAuthMiddleware:
-    def __init__(self, app: ASGIApp, expected_token: str):
+    def __init__(self, app: ASGIApp, expected_token: str, public_paths: tuple[str, ...] = ()):
         self._app = app
         self._expected_token = expected_token
+        self._public_paths = public_paths
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        if scope.get("path") in self._public_paths:
+            # Rota de health check do Render — precisa responder sem token,
+            # senão o Render marca o deploy como "não saudável" e derruba o
+            # serviço mesmo com o servidor rodando perfeitamente.
             await self._app(scope, receive, send)
             return
 
