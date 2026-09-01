@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: cisco-ccw-mcp
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: MCP_TRANSPORT
+        value: streamable-http
+      - key: CISCO_CLIENT_ID
+        sync: false
+      - key: CISCO_CLIENT_SECRET
+        sync: false
+      - key: CISCO_GRANT_TYPE
+        value: client_credentials
+      - key: CISCO_TOKEN_URL
+        value: https://cloudsso.cisco.com/as/token.oauth2
+      - key: CISCO_API_BASE_URL
+        value: https://api.cisco.com
+      - key: CISCO_COMMERCE_BASE_URL
+        value: https://apix.cisco.com
+      - key: CCW_DRY_RUN
+        value: "true"
+      - key: MCP_ACCESS_TOKEN
+        sync: false
+    healthCheckPath: /mcp
