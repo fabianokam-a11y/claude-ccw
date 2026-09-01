@@ -64,8 +64,13 @@ class CiscoAuth:
 
         start = time.monotonic()
         try:
+            # A doc oficial da Cisco mostra client_id/client_secret como
+            # query params na URL (além do form body) — mandamos os dois
+            # jeitos pra máxima compatibilidade com o comportamento real
+            # do servidor de token deles.
             resp = self._http.post(
                 self._settings.cisco_token_url,
+                params=data,
                 data=data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
