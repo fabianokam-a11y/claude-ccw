@@ -17,9 +17,11 @@ Dois modos de execução, controlados pela env var MCP_TRANSPORT:
 """
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from app.auth import CiscoAuth
 from app.clients.catalog import CiscoCatalogClient
@@ -37,7 +39,28 @@ _base = CiscoBaseClient(settings, _auth)
 _catalog = CiscoCatalogClient(_base, settings.cisco_api_base_url, settings.default_currency)
 _estimate_client = CiscoEstimateClient(_base, settings)
 
-mcp = FastMCP("cisco-ccw-mcp", stateless_http=True)
+# Proteção contra DNS rebinding do próprio SDK do MCP: por padrão só aceita
+# Host header "localhost"/"127.0.0.1", o que bloqueia qualquer domínio
+# público (como o do Render) com 421 Misdirected Request. Liberamos aqui o
+# hostname real do serviço, lido automaticamente da env var que o Render
+# injeta (RENDER_EXTERNAL_HOSTNAME), com um fallback manual via
+# MCP_PUBLIC_HOSTNAME caso você troque de provedor ou use domínio próprio.
+_public_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME") or os.environ.get("MCP_PUBLIC_HOSTNAME")
+_allowed_hosts = ["127.0.0.1", "127.0.0.1:*", "localhost", "localhost:*"]
+_allowed_origins = ["http://127.0.0.1:*", "http://localhost:*"]
+if _public_hostname:
+    _allowed_hosts.append(_public_hostname)
+    _allowed_origins.append(f"https://{_public_hostname}")
+
+mcp = FastMCP(
+    "cisco-ccw-mcp",
+    stateless_http=True,
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=_allowed_hosts,
+        allowed_origins=_allowed_origins,
+    ),
+)
 
 
 def _wrap(fn, *args, **kwargs) -> dict:
