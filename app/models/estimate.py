@@ -2,31 +2,27 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 
-class EstimateItemInput(BaseModel):
+class ItemInput(BaseModel):
+    """Item de entrada nas tools. `parent` é o índice 1-based da linha pai (0 = raiz)."""
+
     sku: str
-    quantity: int
+    quantity: float = Field(gt=0)
+    parent: int = Field(default=0, ge=0)
+    duration_months: Optional[int] = Field(default=None, gt=0)
 
+    @field_validator("sku")
+    @classmethod
+    def _clean_sku(cls, v: str) -> str:
+        v = v.strip().upper()
+        if not v:
+            raise ValueError("SKU vazio")
+        return v
 
-class EstimateItem(BaseModel):
-    sku: str
-    description: Optional[str] = None
-    quantity: int
-    unit_price: Optional[float] = None
-    total_price: Optional[float] = None
-
-
-class Estimate(BaseModel):
-    estimate_id: Optional[str] = None
-    name: str
-    status: Optional[str] = None
-    items: list[EstimateItem] = []
-    subtotal: Optional[float] = None
-    total: Optional[float] = None
-    currency: str = "USD"
-    created_date: Optional[str] = None
-    ccw_url: Optional[str] = None
-    dry_run: bool = False
-    raw: Optional[dict] = None
+    def to_line_item(self) -> dict:
+        item = {"sku": self.sku, "qty": self.quantity, "parent": self.parent}
+        if self.duration_months:
+            item["dur"] = self.duration_months
+        return item

@@ -1,5 +1,5 @@
 """
-Client HTTP base compartilhado por CiscoCatalogClient e CiscoEstimateClient.
+Client HTTP base compartilhado pelos clients do Commerce (preço e estimates).
 
 Responsabilidades:
 - Anexar o header Authorization via CiscoAuth (nunca expõe o token).
@@ -120,3 +120,18 @@ class CiscoBaseClient:
             return resp.json()
         except Exception:
             return resp.text[:1000]
+
+    def graphql(self, url: str, query: str, variables: Optional[dict] = None, *, tool: str) -> dict:
+        """Executa uma operação GraphQL e devolve o campo `data`.
+
+        A API do Commerce responde HTTP 200 mesmo quando há erro de negócio
+        (ex.: "not entitled"); nesse caso o erro vem em `errors` e é levantado
+        como CiscoApiError com a mensagem legível.
+        """
+        resp = self.request("POST", url, tool=tool, json_body={"query": query, "variables": variables or {}})
+        body = resp.json()
+        errors = body.get("errors")
+        if errors:
+            msgs = "; ".join(str(e.get("message", e))[:300] for e in errors)
+            raise CiscoApiError(f"Cisco Commerce retornou erro: {msgs}", status_code=resp.status_code, details=errors)
+        return body.get("data") or {}

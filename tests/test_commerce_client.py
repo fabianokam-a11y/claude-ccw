@@ -4,7 +4,7 @@ import respx
 from app.auth import CiscoAuth
 from app.clients.commerce import CiscoApiError, CiscoBaseClient
 
-TOKEN_URL = "https://cloudsso.cisco.com/as/token.oauth2"
+TOKEN_URL = "https://id.cisco.com/oauth2/default/v1/token"
 API_URL = "https://api.cisco.com/test"
 
 

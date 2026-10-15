@@ -5,7 +5,7 @@ import respx
 
 from app.auth import CiscoAuth, CiscoAuthError
 
-TOKEN_URL = "https://cloudsso.cisco.com/as/token.oauth2"
+TOKEN_URL = "https://id.cisco.com/oauth2/default/v1/token"
 
 
 @respx.mock
@@ -56,3 +56,18 @@ def test_token_error_raises_clean_exception(settings):
         assert False, "deveria ter levantado CiscoAuthError"
     except CiscoAuthError as exc:
         assert "test-secret" not in str(exc)
+
+
+@respx.mock
+def test_token_request_uses_basic_header_not_query_string(settings):
+    import base64
+
+    route = respx.post(TOKEN_URL).mock(
+        return_value=httpx.Response(200, json={"access_token": "abc123", "expires_in": 3600})
+    )
+    CiscoAuth(settings).auth_header()
+    req = route.calls[0].request
+    expected = base64.b64encode(b"test-client-id:test-secret").decode()
+    assert req.headers["authorization"] == f"Basic {expected}"
+    assert b"grant_type=client_credentials" in req.content
+    assert "test-secret" not in str(req.url)  # segredo nunca na URL

@@ -11,14 +11,12 @@ services:
         sync: false
       - key: CISCO_CLIENT_SECRET
         sync: false
-      - key: CISCO_GRANT_TYPE
-        value: client_credentials
       - key: CISCO_TOKEN_URL
-        value: https://cloudsso.cisco.com/as/token.oauth2
-      - key: CISCO_API_BASE_URL
-        value: https://api.cisco.com
-      - key: CISCO_COMMERCE_BASE_URL
-        value: https://apix.cisco.com
+        value: https://id.cisco.com/oauth2/default/v1/token
+      - key: CCW_GRAPHQL_URL
+        value: https://capi.cisco.com/commerce/apis
+      - key: CCW_DEFAULT_PRICE_LIST
+        value: GLBRL
       - key: CCW_DRY_RUN
         value: "true"
       - key: MCP_ACCESS_TOKEN

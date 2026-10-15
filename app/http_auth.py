@@ -1,10 +1,7 @@
 """
-Middleware ASGI simples: exige "Authorization: Bearer <token>" em toda
-requisição quando o servidor roda em modo remoto (streamable-http).
-
-Isso é o que impede que qualquer pessoa que descubra a URL pública do
-servidor consiga chamar as tools (inclusive as de escrita no CCW).
-O token é comparado com hmac.compare_digest para evitar timing attack.
+Middleware ASGI: exige "Authorization: Bearer <MCP_ACCESS_TOKEN>" em toda
+requisição ao servidor MCP remoto, exceto nos caminhos públicos (health check).
+Comparação em tempo constante (hmac.compare_digest).
 """
 from __future__ import annotations
 
@@ -28,23 +25,16 @@ class BearerAuthMiddleware:
             return
 
         if scope.get("path") in self._public_paths:
-            # Rota de health check do Render — precisa responder sem token,
-            # senão o Render marca o deploy como "não saudável" e derruba o
-            # serviço mesmo com o servidor rodando perfeitamente.
             await self._app(scope, receive, send)
             return
 
         headers = dict(scope.get("headers", []))
         auth_header = headers.get(b"authorization", b"").decode()
-
-        provided = ""
-        if auth_header.startswith("Bearer "):
-            provided = auth_header[len("Bearer ") :]
+        provided = auth_header[len("Bearer "):] if auth_header.startswith("Bearer ") else ""
 
         if not provided or not hmac.compare_digest(provided, self._expected_token):
             log_event("unauthorized_http_request", endpoint=str(scope.get("path")))
-            response = JSONResponse({"error": "unauthorized"}, status_code=401)
-            await response(scope, receive, send)
+            await JSONResponse({"error": "unauthorized"}, status_code=401)(scope, receive, send)
             return
 
         await self._app(scope, receive, send)

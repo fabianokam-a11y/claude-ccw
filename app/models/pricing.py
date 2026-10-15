@@ -1,32 +1,25 @@
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
 
-PriceSource = Literal["Cisco GPL", "Estimated", "Net", "Discount", "Partner"]
-
-
-class SkuPriceRequest(BaseModel):
-    sku: str
-    quantity: int = 1
-
-
 class SkuPrice(BaseModel):
     sku: str
-    description: Optional[str] = None
-    quantity: int
+    quantity: float
     unit_list_price: Optional[float] = None
     total_list_price: Optional[float] = None
     currency: str
-    price_type: PriceSource = "Cisco GPL"
-    net_unit_price: Optional[float] = None
-    net_total_price: Optional[float] = None
-    discount_percent: Optional[float] = None
+    price_type: str = "Cisco GPL / List Price"
+    price_list: str
+    note: Optional[str] = None
 
 
 class PriceTable(BaseModel):
+    price_list: str
+    currency: str
     items: list[SkuPrice]
     grand_total: float
-    currency: str
+    messages: list[str] = []
+    additional_lines: list[dict] = []
